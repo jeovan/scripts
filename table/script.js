@@ -4,6 +4,16 @@ document.addEventListener('DOMContentLoaded', function (event) {
   table.tableSort({column:'data nascimento',type:'date',order_by:'asc',format:'DD/MM/YYYY'});
   table.tableDraw();
   // console.log(memorySizeOf(table))
+  table.tableFilter(
+    {
+      column:'valor',
+      range:[1,51]
+      // regex:/^(?:(?!\Júlio César Batista\b).)*$/i
+    },
+    {column:'nome',regex:/^(?:(?!\Suélen\b).)*$/i}
+  )
+  // table.tableFilter(  )
+  table.tableDraw();
   
 });
 
@@ -38,35 +48,35 @@ Table.prototype.tableDraw = function () {
   this.table_map.forEach(value=>{ if (value['_STATUS']) table.appendChild(value['_RAW'])});
 }
 
-Table.prototype.tableSort = function order(...rules) {
+Table.prototype.tableSort = function (...r) {
   this.table_map = this.table_map.sort((a, b) => {
-    for (i in rules) {
-      rules[i].column = rules[i].column.toUpperCase();
-      if (rules[i].type.toUpperCase() === 'NUMBER') {
-        if (rules[i].order_by.toUpperCase() === 'ASC') {
-          if (a[rules[i].column] == b[rules[i].column]) continue
-          return a[rules[i].column] - b[rules[i].column]
-        } else if (rules[i].order_by.toUpperCase() === 'DESC') {
-          if (b[rules[i].column] == a[rules[i].column]) continue
-          return b[rules[i].column] - a[rules[i].column]
+    for (i in r) {
+      r[i].column = r[i].column.toUpperCase();
+      if (r[i].type.toUpperCase() === 'NUMBER') {
+        if (r[i].order_by.toUpperCase() === 'ASC') {
+          if (a[r[i].column] == b[r[i].column]) continue
+          return a[r[i].column] - b[r[i].column]
+        } else if (r[i].order_by.toUpperCase() === 'DESC') {
+          if (b[r[i].column] == a[r[i].column]) continue
+          return b[r[i].column] - a[r[i].column]
         }
-      } else if (rules[i].type.toUpperCase() === 'STRING') {
-        if (rules[i].order_by.toUpperCase() === 'ASC') {
-          if (a[rules[i].column].localeCompare(b[rules[i].column]) == 0) continue
-          return a[rules[i].column].localeCompare(b[rules[i].column]) === 1 ? 1 : -1;
-        } else if (rules[i].order_by.toUpperCase() === 'DESC') {
-          if (b[rules[i].column].localeCompare(a[rules[i].column]) == 0) continue
-          return b[rules[i].column].localeCompare(a[rules[i].column]) === 1 ? 1 : -1;
+      } else if (r[i].type.toUpperCase() === 'STRING') {
+        if (r[i].order_by.toUpperCase() === 'ASC') {
+          if (a[r[i].column].localeCompare(b[r[i].column]) == 0) continue
+          return a[r[i].column].localeCompare(b[r[i].column]) === 1 ? 1 : -1;
+        } else if (r[i].order_by.toUpperCase() === 'DESC') {
+          if (b[r[i].column].localeCompare(a[r[i].column]) == 0) continue
+          return b[r[i].column].localeCompare(a[r[i].column]) === 1 ? 1 : -1;
         }
-      } else if (rules[i].type.toUpperCase() === 'DATE'){
+      } else if (r[i].type.toUpperCase() === 'DATE'){
         let regex_data = {}
-        if (rules[i].format == 'DD/MM/YYYY') regex_data = { r: new RegExp(/(\d{2})\/(\d{2})\/(\d{4})/), p: "$2-$1-$3"}
-        a_aux = new Date(a[rules[i].column].replace(regex_data.r,regex_data.p))
-        b_aux = new Date(b[rules[i].column].replace(regex_data.r, regex_data.p))
-        if (rules[i].order_by.toUpperCase() === 'ASC') {
+        if (r[i].format == 'DD/MM/YYYY') regex_data = { r: new RegExp(/(\d{2})\/(\d{2})\/(\d{4})/), p: "$2-$1-$3"}
+        a_aux = new Date(a[r[i].column].replace(regex_data.r,regex_data.p))
+        b_aux = new Date(b[r[i].column].replace(regex_data.r, regex_data.p))
+        if (r[i].order_by.toUpperCase() === 'ASC') {
           if (a_aux == b_aux ) continue
           return a_aux - b_aux 
-        } else if (rules[i].order_by.toUpperCase() === 'DESC') {
+        } else if (r[i].order_by.toUpperCase() === 'DESC') {
           if (b_aux == a_aux) continue
           return b_aux - a_aux
         }
@@ -76,4 +86,26 @@ Table.prototype.tableSort = function order(...rules) {
   });
 }
 
+Table.prototype.tableFilter = function(...r){
+  for(i in r){
+    if(typeof r[i].regex != 'undefined'){
+      let regex = new RegExp(r[i].regex)
+      this.table_map.forEach( field=>{
+        if(field['_STATUS']){
+          if(regex.test(field[r[i].column.toUpperCase()])) field['_STATUS'] = true;
+          else  field['_STATUS'] = false;
+        }
+      });
+    }else if(typeof r[i].range != 'undefined'){
+      this.table_map.forEach( field=>{
+        if(field['_STATUS']){
+          if(field[r[i].column.toUpperCase()] >= r[i].range[0] && field[r[i].column.toUpperCase()] <= r[i].range[1]) field['_STATUS'] = true;
+          else  field['_STATUS'] = false;
+        }
+      });
+    }
+  }
+}
 
+
+// /(\d)(\1)+/g
